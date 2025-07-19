@@ -21,6 +21,7 @@ class FastRAG:
         llm: str = "openai:gpt-3.5-turbo",
         text_splitter: Optional[TextSplitter] = None,
         vector_store: Optional[AbstractVectorStore] = None,
+        prompt_template: Optional[str] = None,
         **llm_kwargs,
     ):
         self.data_source_path = data_source_path
@@ -28,6 +29,7 @@ class FastRAG:
         self.llm = LangChainLLM(model=llm, **llm_kwargs)
         self.text_splitter = text_splitter or RecursiveCharacterTextSplitter()
         self.vector_store = vector_store or FAISSVectorStore()
+        self.prompt_template = prompt_template or "        prompt = self.prompt_template.format(context=context, query=query_text)"
 
     def set_vector_store(self, vector_store: AbstractVectorStore):
         """
@@ -38,9 +40,9 @@ class FastRAG:
         """
         self.vector_store = vector_store
 
-    def build_index(self):
+    async def abuild_index(self):
         """
-        Builds the RAG index from the data source.
+        Asynchronously builds the RAG index from the data source.
         """
         documents = load_documents(self.data_source_path)
         chunked_documents = []
@@ -48,8 +50,33 @@ class FastRAG:
             split_texts = self.text_splitter.split_text(doc.content)
             for text in split_texts:
                 chunked_documents.append(Document(content=text, metadata=doc.metadata))
-        embeddings = self.embedding_model.embed_documents([doc.content for doc in chunked_documents])
-        self.vector_store.add_documents(chunked_documents, embeddings)
+        embeddings = await self.embedding_model.aembed_documents(tuple([doc.content for doc in chunked_documents]))
+        await self.vector_store.aadd_documents(chunked_documents, embeddings)
+
+    def build_index(self):
+        """
+        Builds the RAG index from the data source.
+        """
+        import asyncio
+        asyncio.run(self.abuild_index())
+
+    async def aquery(self, query_text: str, k: int = 5) -> dict:
+        """
+        Asynchronously queries the RAG system.
+
+        Args:
+            query_text: The query text.
+            k: The number of documents to retrieve.
+
+        Returns:
+            A dictionary containing the answer and the sources.
+        """
+        query_embedding = (await self.embedding_model.aembed_documents([query_text]))[0]
+        retrieved_docs = await self.vector_store.asearch(query_embedding, k)
+        context = "\n".join([doc.content for doc in retrieved_docs])
+        prompt = self.prompt_template.format(context=context, query=query_text)
+        answer = await self.llm.agenerate(prompt)
+        return {"answer": answer, "sources": retrieved_docs}
 
     def query(self, query_text: str, k: int = 5) -> dict:
         """
@@ -62,9 +89,5 @@ class FastRAG:
         Returns:
             A dictionary containing the answer and the sources.
         """
-        query_embedding = self.embedding_model.embed_documents([query_text])[0]
-        retrieved_docs = self.vector_store.search(query_embedding, k)
-        context = "\n".join([doc.content for doc in retrieved_docs])
-        prompt = f"Use the following context to answer the question: {context}\nQuestion: {query_text}\nAnswer:"
-        answer = self.llm.generate(prompt)
-        return {"answer": answer, "sources": retrieved_docs}
+        import asyncio
+        return asyncio.run(self.aquery(query_text, k))

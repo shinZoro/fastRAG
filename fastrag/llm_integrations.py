@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from functools import lru_cache
 from langchain.chat_models.base import init_chat_model
 from langchain_core.messages import HumanMessage
 
@@ -21,6 +22,19 @@ class AbstractLLM(ABC):
         """
         pass
 
+    @abstractmethod
+    async def agenerate(self, prompt: str) -> str:
+        """
+        Asynchronously generates a response to a prompt.
+
+        Args:
+            prompt: The prompt to generate a response to.
+
+        Returns:
+            The generated response.
+        """
+        pass
+
 
 class LangChainLLM(AbstractLLM):
     """
@@ -34,6 +48,20 @@ class LangChainLLM(AbstractLLM):
     def __init__(self, model: str, **kwargs):
         self.model = init_chat_model(model, **kwargs)
 
+    @lru_cache(maxsize=128)
+    async def agenerate(self, prompt: str) -> str:
+        """
+        Asynchronously generates a response to a prompt.
+
+        Args:
+            prompt: The prompt to generate a response to.
+
+        Returns:
+            The generated response.
+        """
+        response = await self.model.ainvoke([HumanMessage(content=prompt)])
+        return response.content
+
     def generate(self, prompt: str) -> str:
         """
         Generates a response to a prompt.
@@ -44,5 +72,5 @@ class LangChainLLM(AbstractLLM):
         Returns:
             The generated response.
         """
-        response = self.model.invoke([HumanMessage(content=prompt)])
-        return response.content
+        import asyncio
+        return asyncio.run(self.agenerate(prompt))
