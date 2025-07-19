@@ -1,0 +1,38 @@
+[project]
+name = "fastrag"
+version = "0.1.0"
+authors = [
+    { name="fastRAG-dev", email="dev@fastrag.com" },
+]
+description = "A developer-friendly SDK for building Retrieval-Augmented Generation (RAG) systems."
+readme = "docs/README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "sentence-transformers",
+    "faiss-cpu",
+    "langchain",
+    "tiktoken",
+    "chromadb",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+]
+llms = [
+    "langchain-openai",
+    "langchain-groq",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pypa/sampleproject"
+"Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[tool.setuptools.packages]
+find = { include = ["fastrag*"] }

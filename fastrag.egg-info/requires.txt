@@ -1,0 +1,12 @@
+sentence-transformers
+faiss-cpu
+langchain
+tiktoken
+chromadb
+
+[dev]
+pytest
+
+[llms]
+langchain-openai
+langchain-groq

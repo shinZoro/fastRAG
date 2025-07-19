@@ -1,0 +1,15 @@
+pyproject.toml
+docs/README.md
+fastrag/__init__.py
+fastrag/chunking.py
+fastrag/core.py
+fastrag/data_sources.py
+fastrag/embeddings.py
+fastrag/llm_integrations.py
+fastrag/vector_stores.py
+fastrag.egg-info/PKG-INFO
+fastrag.egg-info/SOURCES.txt
+fastrag.egg-info/dependency_links.txt
+fastrag.egg-info/requires.txt
+fastrag.egg-info/top_level.txt
+tests/test_core.py
